@@ -635,18 +635,33 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--input",
+        "--inventory",
         required=True,
+    )
+
+    parser.add_argument(
+        "--subscription-owners",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--resourcegroup-owners",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--trending",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--llm",
+        required=False,
     )
 
     parser.add_argument(
         "--output",
         required=True,
-    )
-
-    parser.add_argument(
-        "--prompt",
-        default="cloudsec_analysis_prompt.md",
     )
 
     args = parser.parse_args()
