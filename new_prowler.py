@@ -60,6 +60,7 @@ from concurrent.futures import (
 
 from datetime import datetime, timezone
 from pathlib import Path
+from collections import deque
 
 
 # ---------------------------------------------------------------------------
@@ -356,10 +357,6 @@ def get_log_excerpt(
     log_file: Path,
     max_lines: int = 15,
 ) -> str:
-    """
-    Read only a small tail of a Prowler log.
-    Prevents excessive Azure DevOps job output.
-    """
 
     try:
         with log_file.open(
@@ -368,15 +365,15 @@ def get_log_excerpt(
             errors="replace",
         ) as fh:
 
-            lines = fh.readlines()
+            lines = deque(
+                fh,
+                maxlen=max_lines,
+            )
 
-        excerpt = lines[-max_lines:]
-
-        return "".join(excerpt)[-2500:]
+        return "".join(lines)[-2500:]
 
     except Exception:
         return "Unable to read execution log."
-
 
 # ---------------------------------------------------------------------------
 # Prowler execution
@@ -429,8 +426,8 @@ def run_prowler_for_subscription(
         "--output-directory",
         str(subscription_output),
         "--output-formats",
-        "csv",
-        "html",
+#        "csv",
+#        "html",
         "json-ocsf",
     ]
 
