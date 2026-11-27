@@ -62,3 +62,21 @@ python prowler_scan.py \
   --output reports \
   --max-workers 3 \
   --fail-on-error
+
+
+- script: |
+    mkdir -p reports/tenant
+
+    prowler azure \
+      --sp-env-auth \
+      --subscription-ids "$(TENANT_SCAN_SUBSCRIPTION_ID)" \
+      --services entra \
+      --output-directory reports/tenant \
+      --output-formats json-ocsf
+
+  displayName: 'Prowler - Tenant Entra Assessment'
+  workingDirectory: '$(Build.SourcesDirectory)'
+  env:
+    AZURE_TENANT_ID: $(TENANT_ID)
+    AZURE_CLIENT_ID: $(CLIENT_ID)
+    AZURE_CLIENT_SECRET: $(CLIENT_SECRET)
