@@ -660,23 +660,36 @@ def main():
     )
 
     parser.add_argument(
+        "--prompt",
+        default="cloudsec_analysis_prompt.md",
+        help="Path to the Azure OpenAI analysis prompt file.",
+    )
+
+    parser.add_argument(
         "--output",
         required=True,
     )
 
     args = parser.parse_args()
 
-    input_csv = Path(
-        args.input
-    )
+    input_csv = Path(args.inventory)
 
     output_dir = Path(
         args.output
     )
 
-    prompt_file = Path(
-        args.prompt
-    )
+    prompt_file = Path(args.prompt)
+    if not prompt_file.is_absolute():
+        prompt_file = BASE_DIR / prompt_file
+
+    if not input_csv.is_absolute():
+        input_csv = Path.cwd() / input_csv
+
+    if not output_dir.is_absolute():
+        output_dir = Path.cwd() / output_dir
+
+    if not input_csv.is_file():
+        fail(f"Inventory CSV not found: {input_csv}")
 
     output_dir.mkdir(
         parents=True,
