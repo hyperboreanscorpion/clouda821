@@ -338,7 +338,7 @@ def markdown_to_pdf(
             ("TOPPADDING", (0, 0), (-1, -1), 9), ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
         ]))
         elements.extend([kpi, Spacer(1, 14)])
-        elements.append(Paragraph(f"Assessment scope: failed Critical, High, and Medium checks, limited to the first {MAX_FINDINGS_PER_SUBSCRIPTION} findings per subscription by the configured report cap. The score is capped at 100 using the existing severity weights and thresholds.", styles["ARCCallout"]))
+        elements.append(Paragraph(f"Assessment scope: failed Azure security checks, limited to the first {MAX_FINDINGS_PER_SUBSCRIPTION} findings per subscription by the configured report cap. The score is capped at 100 using the existing severity weights and thresholds.", styles["ARCCallout"]))
 
     lines = markdown_text.splitlines()
     first_line = True
