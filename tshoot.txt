@@ -29,3 +29,36 @@ if heading_match:
             heading_style,
         )
     )
+
+
+def get_log_excerpt(
+    log_file: Path,
+    max_lines: int = 15,
+) -> str:
+
+    try:
+        with log_file.open(
+            "r",
+            encoding="utf-8",
+            errors="replace",
+        ) as fh:
+
+            lines = deque(
+                fh,
+                maxlen=max_lines,
+            )
+
+        return "".join(lines)[-2500:]
+
+    except Exception:
+        return "Unable to read execution log."
+
+
+
+from collections import deque
+
+python prowler_scan.py \
+  --subscriptions subscriptions.csv \
+  --output reports \
+  --max-workers 3 \
+  --fail-on-error
