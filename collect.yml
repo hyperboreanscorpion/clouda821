@@ -8,10 +8,10 @@ variables:
   value: '3.12'
 
 - name: SCRIPT_PATH
-  value: 'prowler_azure_scan.py'
+  value: '$(Build.SourcesDirectory)/new_prowler.py'
 
 - name: SUBSCRIPTIONS_FILE
-  value: 'nonprod-subscriptions.csv'
+  value: '$(Build.SourcesDirectory)/nonprod-subscriptions.csv'
 
 - name: OUTPUT_DIR
   value: '$(Build.SourcesDirectory)/prowler-results'
@@ -20,29 +20,26 @@ variables:
 - group: secops-scan
 
 stages:
-
 - stage: Collect
   displayName: Azure Cloud Collection
-
   jobs:
-
   - job: Collect
     displayName: Prowler Collection
+    timeoutInMinutes: 60
+    cancelTimeoutInMinutes: 5
 
     steps:
-
     - checkout: self
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.12'
+        versionSpec: '$(PYTHON_VERSION)'
+      displayName: Select Python
 
     - script: |
         python -m pip install --upgrade pip
-
-        pip install \
-          pandas \
-          prowler
+        pip install pandas prowler==5.53.0
+        prowler -v
       displayName: Install Dependencies
 
     - bash: |
@@ -53,7 +50,8 @@ stages:
 
     - bash: |
         mkdir -p "$(Build.SourcesDirectory)/output"
-        mkdir -p "$(Build.SourcesDirectory)/prowler-results"
+        mkdir -p "$(OUTPUT_DIR)"
+        mkdir -p "$(Build.SourcesDirectory)/ownership"
       displayName: Create Output Directories
 
     - bash: |
@@ -78,8 +76,7 @@ stages:
           --max-workers 3 \
           --output "$(OUTPUT_DIR)" \
           --fail-on-error
-          
-      displayName: Run Prowler
+      displayName: Run Prowler Tenant and Subscription Assessments
       env:
         TENANT_ID: $(TENANT_ID)
         CLIENT_ID: $(CLIENT_ID)
@@ -90,19 +87,25 @@ stages:
           --subscriptions "$(SUBSCRIPTIONS_FILE)" \
           --output "$(Build.SourcesDirectory)/ownership"
       displayName: Export Ownership
+      condition: always()
       env:
         TENANT_ID: $(TENANT_ID)
         CLIENT_ID: $(CLIENT_ID)
         CLIENT_SECRET: $(CLIENT_SECRET)
 
+    # Always publish results, including partial reports when a scan fails.
     - task: PublishPipelineArtifact@1
-      displayName: Publish Prowler Output
+      displayName: Publish Prowler Results
+      condition: always()
       inputs:
-        targetPath: '$(Build.SourcesDirectory)/output'
-        artifact: 'ProwlerOutput'
+        targetPath: '$(OUTPUT_DIR)'
+        artifact: 'ProwlerResults'
+        publishLocation: 'pipeline'
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Ownership Data
+      condition: always()
       inputs:
         targetPath: '$(Build.SourcesDirectory)/ownership'
         artifact: 'OwnershipData'
+        publishLocation: 'pipeline'
