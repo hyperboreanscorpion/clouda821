@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/vsts/work/1/s/04_cloud_metrics.py", line 1031, in <module>
+    main()
+  File "/home/vsts/work/1/s/04_cloud_metrics.py", line 670, in main
+    args.input
+AttributeError: 'Namespace' object has no attribute 'input'
+
+##[error]Bash exited with code '1'.
+Finishing: Executive Metrics
