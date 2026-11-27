@@ -1,0 +1,108 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-24.04'
+
+variables:
+- name: PYTHON_VERSION
+  value: '3.12'
+
+- name: SCRIPT_PATH
+  value: 'prowler_azure_scan.py'
+
+- name: SUBSCRIPTIONS_FILE
+  value: 'nonprod-subscriptions.csv'
+
+- name: OUTPUT_DIR
+  value: '$(Build.SourcesDirectory)/prowler-results'
+
+- group: SecOps-Azure
+- group: secops-scan
+
+stages:
+
+- stage: Collect
+  displayName: Azure Cloud Collection
+
+  jobs:
+
+  - job: Collect
+    displayName: Prowler Collection
+
+    steps:
+
+    - checkout: self
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.12'
+
+    - script: |
+        python -m pip install --upgrade pip
+
+        pip install \
+          pandas \
+          prowler
+      displayName: Install Dependencies
+
+    - bash: |
+        az extension add \
+          --name resource-graph \
+          --upgrade
+      displayName: Install Resource Graph
+
+    - bash: |
+        mkdir -p "$(Build.SourcesDirectory)/output"
+        mkdir -p "$(Build.SourcesDirectory)/prowler-results"
+      displayName: Create Output Directories
+
+    - bash: |
+        az login \
+          --service-principal \
+          -u "$CLIENT_ID" \
+          -p "$CLIENT_SECRET" \
+          --tenant "$TENANT_ID"
+      displayName: Azure Login
+      env:
+        TENANT_ID: $(TENANT_ID)
+        CLIENT_ID: $(CLIENT_ID)
+        CLIENT_SECRET: $(CLIENT_SECRET)
+
+    - script: |
+        export AZURE_TENANT_ID="$TENANT_ID"
+        export AZURE_CLIENT_ID="$CLIENT_ID"
+        export AZURE_CLIENT_SECRET="$CLIENT_SECRET"
+
+        python "$(SCRIPT_PATH)" \
+          --subscriptions "$(SUBSCRIPTIONS_FILE)" \
+          --max-workers 3 \
+          --output "$(OUTPUT_DIR)" \
+          --fail-on-error
+          
+      displayName: Run Prowler
+      env:
+        TENANT_ID: $(TENANT_ID)
+        CLIENT_ID: $(CLIENT_ID)
+        CLIENT_SECRET: $(CLIENT_SECRET)
+
+    - script: |
+        python collect_azure_owners.py \
+          --subscriptions "$(SUBSCRIPTIONS_FILE)" \
+          --output "$(Build.SourcesDirectory)/ownership"
+      displayName: Export Ownership
+      env:
+        TENANT_ID: $(TENANT_ID)
+        CLIENT_ID: $(CLIENT_ID)
+        CLIENT_SECRET: $(CLIENT_SECRET)
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Prowler Output
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/output'
+        artifact: 'ProwlerOutput'
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Ownership Data
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/ownership'
+        artifact: 'OwnershipData'
